@@ -174,55 +174,55 @@ if __name__ == '__main__':
     print("处理数据")
     # data = standardization(data)
     dataSize = len(data)
-
-
-
-
-
     hidden_size = 16
-    seq = Sequence(1,2,hidden_size,1).double().cuda()
-    criterion = nn.MSELoss()
-    optimizer = optim.SGD(seq.parameters(), lr = 0.0001)
+    # seq = Sequence(1,2,hidden_size,1).double().cuda()
 
-
-    #begin to train
-    batchSize = 100
-    preSeqSize = 100
-
-    steps = dataSize//batchSize
+    preSeqArray = [10,50,100,200,400,800]
     print("总数据长度",dataSize)
+    steps = 1000
     print("总共要运行{}个回合".format(steps))
-    for i in range(steps):
-        indexTemp = np.random.choice(dataSize-preSeqSize, batchSize)
-        input = np.stack([data[idx:idx+preSeqSize].reshape(-1,1) for idx in indexTemp],axis=0)
-        input = torch.tensor(input).cuda()
+    
+    for preseq in preSeqArray:
+        seq = Sequence(1,2,hidden_size,1).double().cuda()
+        criterion = nn.MSELoss()
+        optimizer = optim.SGD(seq.parameters(), lr = 0.0001)
 
-        target = np.stack([data[idx+preSeqSize] for idx in indexTemp],0)
-        target = torch.tensor(target).unsqueeze(1).cuda()
+        #begin to train
+        batchSize = 100
+        preSeqSize = preseq
+        win = "{}".format(preseq)
 
-        ## 删除0数据
-        boolTensor = torch.BoolTensor(np.ones(batchSize))
+        for i in range(steps):
+            indexTemp = np.random.choice(dataSize-preSeqSize, batchSize)
+            input = np.stack([data[idx:idx+preSeqSize].reshape(-1,1) for idx in indexTemp],axis=0)
+            input = torch.tensor(input).cuda()
 
-        for subBatch in range(batchSize):
-            if input[subBatch].isnan().any() or target[subBatch].isnan().any():
-                boolTensor[subBatch] = False
+            target = np.stack([data[idx+preSeqSize] for idx in indexTemp],0)
+            target = torch.tensor(target).unsqueeze(1).cuda()
 
-        input_no_nan = input[boolTensor]
-        target_no_nan = target[boolTensor]
-        batch_no_nan = torch.count_nonzero(boolTensor)
-        if batch_no_nan == 0:
-            print("空的Batch")
-        else:
-        # print(input_no_nan.shape,target_no_nan.shape)
-        # break
+            ## 删除0数据
+            boolTensor = torch.BoolTensor(np.ones(batchSize))
 
-            optimizer.zero_grad()
-            hc = torch.zeros(2,batch_no_nan,hidden_size).double().cuda()
-            hn = torch.zeros(2,batch_no_nan,hidden_size).double().cuda()
-            out,_,_ = seq(input_no_nan,hn,hc)
-            # print(out)
-            loss = criterion(out,target_no_nan)
-            draw_line(vis,'loss1',i,(loss.item(),),["loss"])
-            print("iter:{},loss:{}".format(i,loss.item()))
-            loss.backward()
-            optimizer.step()
+            for subBatch in range(batchSize):
+                if input[subBatch].isnan().any() or target[subBatch].isnan().any():
+                    boolTensor[subBatch] = False
+
+            input_no_nan = input[boolTensor]
+            target_no_nan = target[boolTensor]
+            batch_no_nan = torch.count_nonzero(boolTensor)
+            if batch_no_nan == 0:
+                print("空的Batch")
+            else:
+            # print(input_no_nan.shape,target_no_nan.shape)
+            # break
+
+                optimizer.zero_grad()
+                hc = torch.zeros(2,batch_no_nan,hidden_size).double().cuda()
+                hn = torch.zeros(2,batch_no_nan,hidden_size).double().cuda()
+                out,_,_ = seq(input_no_nan,hn,hc)
+                # print(out)
+                loss = criterion(out,target_no_nan)
+                draw_line(vis,win,i,(loss.item(),),["loss"])
+                print("iter:{},loss:{}".format(i,loss.item()))
+                loss.backward()
+                optimizer.step()
