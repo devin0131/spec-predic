@@ -1,4 +1,5 @@
 trainingdata.csv
+*.csv
 __init__.py
 __pycache__
 

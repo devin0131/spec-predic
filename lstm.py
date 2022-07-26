@@ -18,12 +18,14 @@ import visdom
 # matplotlib.use('Agg')
 # import matplotlib.pyplot as plt
 def normalization(data):
-    _range = np.max(data) - np.min(data)
-    return (data - np.min(data)) / _range
+    _range = np.nanmax(data) - np.nanmin(data)
+    return (data - np.nanmin(data)) / _range
 
 def standardization(data):
-    mu = np.mean(data)
-    sigma = np.std(data)
+    # mu = np.mean(data)
+    # sigma = np.std(data)
+    mu = np.nanmean(data)
+    sigma = np.nanstd(data)
     return (data - mu) / sigma
 def init_line(name,windowName:list):
     try:
@@ -163,29 +165,26 @@ class lstm():
 
 
 if __name__ == '__main__':
-    vis = init_line("lstm",["loss1","loss2","loss3"])
-    # # set random seed to 0
-    # np.random.seed(0)
-    # torch.manual_seed(0)
-
-    # load data and make training set
     ddf = dd.read_csv("trainingdata.csv")
     data = np.array(ddf.up)
-    print("处理数据")
     # data = standardization(data)
+    data = normalization(data)
+    print("处理数据")
     dataSize = len(data)
     hidden_size = 16
     # seq = Sequence(1,2,hidden_size,1).double().cuda()
 
-    preSeqArray = [10,50,100,200,400,800]
+    preSeqArray = [100, 250, 500, 800, 1000, 2000, 2500, 3500, 4000]
     print("总数据长度",dataSize)
-    steps = 1000
+    steps = 1500
     print("总共要运行{}个回合".format(steps))
     
+
+    vis = init_line("lstm_onlyNormalization",[])
     for preseq in preSeqArray:
         seq = Sequence(1,2,hidden_size,1).double().cuda()
         criterion = nn.MSELoss()
-        optimizer = optim.SGD(seq.parameters(), lr = 0.0001)
+        optimizer = optim.SGD(seq.parameters(), lr = 0.001)
 
         #begin to train
         batchSize = 100
